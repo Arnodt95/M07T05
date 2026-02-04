@@ -1,0 +1,36 @@
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+h1, h2, h3, .headline {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  letter-spacing: .2px;
+}
+
+.card {
+  border-radius: 1rem;
+}
+
+.hero-card {
+  border-radius: 1rem;
+}
+
+.article-body {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 1.1rem;
+  line-height: 1.85;
+}
+
+.thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: .75rem;
+}
+
+.nav .nav-link {
+  color: rgba(255,255,255,.75);
+}
+.nav .nav-link:hover {
+  color: rgba(255,255,255,1);
+}

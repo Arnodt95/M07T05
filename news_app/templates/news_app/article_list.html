@@ -1,0 +1,138 @@
+{% extends "news_app/base.html" %}
+{% block title %}Top Stories · News{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+
+    {% if featured %}
+      <div class="card hero-card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+
+          {% if featured.image %}
+            <img class="thumb mb-3" src="{{ featured.image.url }}" alt="Featured image">
+          {% endif %}
+
+          <div class="d-flex gap-2 flex-wrap mb-2">
+            <span class="badge text-bg-secondary">
+              {% if featured.publisher %}{{ featured.publisher.name }}{% else %}Independent{% endif %}
+            </span>
+            {% if featured.approved %}
+              <span class="badge text-bg-success">Approved</span>
+            {% else %}
+              <span class="badge text-bg-warning">Pending</span>
+            {% endif %}
+          </div>
+
+          <h2 class="display-6 fw-bold mb-2">
+            <a class="text-decoration-none" href="{% url 'article_detail' featured.id %}">
+              {{ featured.title }}
+            </a>
+          </h2>
+
+          <div class="text-secondary small mb-3">
+            By <strong>{{ featured.author.username }}</strong> • {{ featured.created_at|date:"M d, Y H:i" }}
+          </div>
+
+          <p class="mb-3">{{ featured.content|truncatechars:240 }}</p>
+
+          <a class="btn btn-primary" href="{% url 'article_detail' featured.id %}">Read full story</a>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h3 class="h5 m-0">Latest</h3>
+      {% if user.is_authenticated %}
+        {% if user.role == "journalist" %}
+          <a class="btn btn-outline-light btn-sm" href="{% url 'article_create' %}">Write an article</a>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {% if articles %}
+      <div class="row g-3">
+        {% for a in articles %}
+          <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+              <div class="card-body">
+
+                {% if a.image %}
+                  <img class="thumb mb-3" src="{{ a.image.url }}" alt="Article image">
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                  <span class="badge text-bg-secondary">
+                    {% if a.publisher %}{{ a.publisher.name }}{% else %}Independent{% endif %}
+                  </span>
+                  {% if not a.approved %}
+                    <span class="badge text-bg-warning">Pending</span>
+                  {% endif %}
+                </div>
+
+                <h4 class="h5 mt-2 mb-1">
+                  <a class="text-decoration-none" href="{% url 'article_detail' a.id %}">
+                    {{ a.title }}
+                  </a>
+                </h4>
+
+                <div class="text-secondary small mb-2">
+                  By {{ a.author.username }} • {{ a.created_at|date:"M d, Y H:i" }}
+                </div>
+
+                <p class="mb-3">{{ a.content|truncatechars:160 }}</p>
+
+                <div class="d-flex gap-2 flex-wrap">
+                  <a class="btn btn-outline-light btn-sm" href="{% url 'article_detail' a.id %}">Read</a>
+
+                  {% if user.is_authenticated %}
+                    {% if user.role == "editor" or user.id == a.author_id %}
+                      <a class="btn btn-outline-light btn-sm" href="{% url 'article_edit' a.id %}">Edit</a>
+                      <a class="btn btn-outline-danger btn-sm" href="{% url 'article_delete' a.id %}">Delete</a>
+                    {% endif %}
+                  {% endif %}
+                </div>
+
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">No articles available.</div>
+    {% endif %}
+
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body">
+        <h5 class="mb-2">Get the newsletter</h5>
+        <p class="text-secondary small mb-3">Subscribe to publishers & journalists you trust.</p>
+
+        {% if user.is_authenticated %}
+          {% if user.role == "reader" %}
+            <a class="btn btn-primary btn-sm" href="{% url 'subscriptions' %}">Manage subscriptions</a>
+          {% else %}
+            <div class="text-secondary small">Subscriptions are available for reader accounts.</div>
+          {% endif %}
+        {% else %}
+          <a class="btn btn-primary btn-sm" href="{% url 'register' %}">Create a reader account</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if user.is_authenticated %}
+      {% if user.role == "editor" %}
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <h5 class="mb-2">Editor Desk</h5>
+            <p class="text-secondary small mb-3">Review pending submissions.</p>
+            <a class="btn btn-outline-light btn-sm" href="{% url 'editor_queue' %}">Open queue</a>
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
