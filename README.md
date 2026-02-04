@@ -7,288 +7,223 @@ A Django-based News Management Application that allows journalists and editors t
 ## Features
 
 ### User Roles
-
 The system uses a custom user model with role-based access:
-
 - **Reader**
   - View published articles
   - Subscribe to publishers and journalists
   - Receive notifications for approved articles
-
 - **Journalist**
   - Create and submit articles
   - Edit their own articles
   - Create newsletters
-
 - **Editor**
   - Review articles
   - Approve or reject submissions
   - Manage publication workflow
 
-### Article Management
-
-- Create, edit, and submit articles
-- Article approval workflow
-- Article images supported
+### Content & Workflow
+- Article creation/editing/submission with an approval workflow
+- Image uploads for articles
 - Editor review queue
-
-### Publisher & Newsletter Support
-
-- Publishers can be created and managed
-- Users can subscribe to publishers and journalists
-- Newsletter creation, listing, and detail views
+- Newsletter creation and browsing
 
 ### Notifications
-
-When an article is approved:
-- Subscribers are notified via email
-- Social posting integration is supported (via helper functions)
+When an article is approved, subscribers can be notified by email (and optional social posting helpers are included).
 
 ### REST API
-
-The project provides REST endpoints using Django REST Framework. Includes:
-- Token authentication
-- Article endpoints
-- Publisher endpoints
-- Newsletter endpoints
-- Subscriber article feeds
-
-### Authentication
-
-Supports: - Django session authentication - Token authentication for API
-usage
-
+REST endpoints are provided using Django REST Framework with token authentication.
 
 ---
 
-## Project Structure
+## Tech Stack / Requirements
 
-```
-M06T08/
-│
-├── manage.py
-├── .env
-│
-├── news_app_project/
-│   ├── settings.py
-│   ├── urls.py
-│   ├── asgi.py
-│   └── wsgi.py
-│
-└── news_app/
-    ├── models.py
-    ├── views.py
-    ├── api_views.py
-    ├── serializers.py
-    ├── forms.py
-    ├── signals.py
-    ├── admin.py
-    ├── urls.py
-    ├── urls_api.py
-    ├── templates/
-    ├── static/
-    ├── migrations/
-    └── functions/
-        ├── notify.py
-        └── x_post.py
-```
-
----
-
-## Requirements
-
-Typical dependencies include:
 - Python 3.10+
-- Django (4.2+)
+- Django 4.2+
 - Django REST Framework
-- MySQL/MariaDB client libraries
-- python-dotenv
-- Pillow (image uploads)
+- MySQL/MariaDB
+- Dependencies listed in `requirements.txt`
 
-Install:
+Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## Environment Configuration
+## Environment Configuration (Do NOT commit secrets)
 
-The project uses a `.env` file for configuration (loaded via `python-dotenv`).
+This project reads configuration from environment variables (loaded locally from a `.env` file via `python-dotenv`).
 
-Example `.env`:
+**Never commit** `.env` (or any access tokens/passwords) to a public repository.
+
+### `.env.example` (copy to `.env` locally)
+Create a `.env` file in the same directory as `manage.py`:
+
 ```env
-SECRET_KEY=your-secret-key
+# Django
+SECRET_KEY=replace-me
 DEBUG=1
-
-# Database (MySQL/MariaDB)
-DB_NAME=news_db
-DB_USER=root
-DB_PASSWORD=password
-DB_HOST=127.0.0.1
-DB_PORT=3306
-
 ALLOWED_HOSTS=127.0.0.1,localhost
 SITE_BASE_URL=http://127.0.0.1:8000
 
-# Email
+# Database (MySQL/MariaDB)
+DB_NAME=news_db
+DB_USER=news_user
+DB_PASSWORD=replace-me
+DB_HOST=127.0.0.1
+DB_PORT=3306
+
+# Email (dev-friendly default)
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
 DEFAULT_FROM_EMAIL=no-reply@news.local
 
-# X (Twitter) Integration (Optional)
-X_BEARER_TOKEN=your_x_bearer_token_here
+# X (Twitter) Integration (optional)
+X_BEARER_TOKEN=
 X_TWEET_ENDPOINT=https://api.x.com/2/tweets
 ```
-
 ---
 
 ## Database Setup (MySQL / MariaDB)
 
-This project is configured to use the Django MySQL backend, which is compatible with MySQL and MariaDB when the server and driver are correctly installed.
+### 1) Create database
 
-1. Create the database:
 ```sql
-CREATE DATABASE news_db;
+CREATE DATABASE news_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-2. Apply migrations:
-```bash
-python manage.py migrate
-```
+### 2) Create user (recommended)
 
-3. Create an admin user:
-```bash
-python manage.py createsuperuser
+```sql
+CREATE USER 'news_user'@'%' IDENTIFIED BY 'your_password_here';
+GRANT ALL PRIVILEGES ON news_db.* TO 'news_user'@'%';
+FLUSH PRIVILEGES;
 ```
 
 ---
 
-## Running the Application
+## Run Locally (venv)
 
-Start the development server:
-```bash
+### Windows (PowerShell)
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+Create `.env` (see above), then:
+
+```powershell
+python manage.py migrate
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Open in browser:
-- Home: `http://127.0.0.1:8000`
-- Admin: `http://127.0.0.1:8000/admin`
+Open:
+- Home: http://127.0.0.1:8000/
+- Admin: http://127.0.0.1:8000/admin/
 
 ---
 
-## REST API Usage
+## Run with Docker
 
-### Obtain API Token
-Token authentication is provided via DRF’s token endpoint: `POST /api/login/`.
+This repo supports a **Dockerfile-only** workflow (no database container). You must provide a reachable MySQL/MariaDB instance via environment variables.
 
-Request:
-```http
-POST /api/login/
-Content-Type: application/json
+### Important: MySQL running on your Windows machine
+When MySQL is on the Windows host, the container should connect using:
+- `DB_HOST=host.docker.internal`
+- `DB_PORT=3306`
 
+### 1) Build the image
+From the project root (same folder as `manage.py` and `Dockerfile`):
+
+```powershell
+docker build -t newsapp:latest .
+```
+
+### 2) Run the container
+Replace `DB_PASSWORD` and `SECRET_KEY` with your own values:
+
+```powershell
+docker run --name newsapp --rm -p 8000:8000 `
+  -e SECRET_KEY="replace-me" `
+  -e DEBUG="1" `
+  -e ALLOWED_HOSTS="127.0.0.1,localhost" `
+  -e SITE_BASE_URL="http://127.0.0.1:8000" `
+  -e DB_NAME="news_db" `
+  -e DB_USER="news_user" `
+  -e DB_PASSWORD="replace-me" `
+  -e DB_HOST="host.docker.internal" `
+  -e DB_PORT="3306" `
+  newsapp:latest
+```
+
+### 3) Run migrations (recommended)
+In a second terminal:
+
+```powershell
+docker exec -it newsapp python manage.py migrate
+```
+
+### 4) Create a superuser (optional)
+
+```powershell
+docker exec -it newsapp python manage.py createsuperuser
+```
+
+Then open:
+- Home: http://127.0.0.1:8000/
+- Admin: http://127.0.0.1:8000/admin/
+
+---
+
+## Documentation (Sphinx)
+
+Project documentation is generated from existing docstrings and stored under the `docs/` directory.
+
+Build the HTML docs:
+
+```powershell
+cd docs
+.\make.bat html
+cd ..
+```
+
+Open the generated docs in a browser:
+- `docs/build/html/index.html`
+
+> Note: The course task requires committing generated documentation under `docs/` so that repository visitors can read it easily.
+
+---
+
+## REST API
+
+### Get a token
+`POST /api/login/` with JSON:
+
+```json
 {
   "username": "user",
   "password": "password"
 }
 ```
 
-Response:
-```json
-{
-  "token": "abc123..."
-}
-```
+Use the token:
 
-Use token in headers:
 ```http
 Authorization: Token <your-token>
 ```
 
-### API Endpoints
-
-#### Articles
+### Example endpoints
 - `GET /api/articles/`
-- `GET /api/articles/{id}/`
-- `GET /api/articles/subscribed/`
-
-#### Publishers
 - `GET /api/publishers/`
-- `GET /api/publishers/{id}/`
-
-#### Newsletters
 - `GET /api/newsletters/`
-- `GET /api/newsletters/{id}/`
-
----
-
-## Signals & Automation
-
-Signals are used to detect when an article transitions from `approved=False` to `approved=True` and then trigger subscriber notifications and optional X posting.
-
-Location:
-- `news_app/signals.py`
-
----
-
-## X (Twitter) API Integration
-
-When an editor approves an article, the app can:
-1. Email subscribers with an excerpt and link
-2. Attempt to create a post on X using the configured endpoint
-
-### 1) Get X API access & credentials
-
-To use X posting you need an X developer account and an app created in the developer console. You must obtain credentials (such as a Bearer Token) from your app’s “Keys and tokens”.
-
-Note: Posting privileges and required authorization may depend on your X plan and authentication method.
-
-### 2) Provide credentials via environment variables
-
-Set the following in your `.env` (recommended), and ensure `.env` is not committed to source control:
-
-```env
-X_BEARER_TOKEN=your_x_bearer_token_here
-X_TWEET_ENDPOINT=https://api.x.com/2/tweets
-```
-
-- If `X_TWEET_ENDPOINT` is not set, the code defaults to `https://api.x.com/2/tweets`.
-
-### 3) Important note about the current implementation
-
-The current implementation in `news_app/functions/x_post.py` retrieves the bearer token using an environment variable name that is hard-coded as a long literal string.
-
-To align with the `.env` instructions above, update the code to load:
-- `os.getenv("X_BEARER_TOKEN", "")`
-
-instead of the current literal.
-
-### 4) Disabling X posting
-
-If `X_BEARER_TOKEN` is unset or empty, the X posting function returns `False` and does nothing. This allows you to run the app without X integration enabled.
-
-### 5) Security best practices
-
-- Guard keys/tokens carefully
-- Avoid committing secrets to source control
-- Use environment variables or excluded secret files
-- Rotate/regenerate credentials if exposed
-
----
-
-## Static and Media Files
-
-Static files:
-- `/static/`
-
-Uploaded media:
-- `/media/`
-
-Ensure media serving is configured correctly in production.
 
 ---
 
 ## Testing
 
-Run tests with:
 ```bash
 python manage.py test
+```
